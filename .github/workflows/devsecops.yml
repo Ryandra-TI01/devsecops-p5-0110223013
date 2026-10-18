@@ -68,6 +68,11 @@ jobs:
         with:
           name: coverage-artifact
 
+      - name: Verify coverage report artifact
+        run: |
+          ls -la coverage.xml
+          head -n 20 coverage.xml
+
       - name: Run Bandit SAST security scan
         run: |
           bandit -r app -v
@@ -80,6 +85,7 @@ jobs:
           args: >
             -Dsonar.organization=${{ vars.SONAR_ORGANIZATION || secrets.SONAR_ORGANIZATION }}
             -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY || 'devsecops-p5-0110223013' }}
+            -Dsonar.python.coverage.reportPaths=coverage.xml
 
       - name: SonarCloud Quality Gate Check
         uses: sonarsource/sonarqube-quality-gate-action@7a5fffe8e523c40e0c740b6bc2712ab503e52efa # v1.2.1
