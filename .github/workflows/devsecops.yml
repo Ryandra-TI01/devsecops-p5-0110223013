@@ -1,0 +1,89 @@
+name: DevSecOps Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run automated test suite with coverage
+        run: |
+          pytest --cov=app --cov-report=term-missing --cov-report=xml:coverage.xml
+
+      - name: Upload test coverage report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-artifact
+          path: coverage.xml
+          if-no-files-found: error
+          retention-days: 7
+
+  sast-scan:
+    name: SAST Scan & Quality Gate
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout repository (full git history for SonarCloud)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Download test coverage report artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-artifact
+
+      - name: Run Bandit SAST security scan
+        run: |
+          bandit -r app -v
+
+      - name: Run SonarCloud SAST scan
+        uses: SonarSource/sonarqube-scan-action@v8
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.organization=${{ vars.SONAR_ORGANIZATION || secrets.SONAR_ORGANIZATION }}
+            -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY || 'devsecops-p5-0110223013' }}
+
+      - name: SonarCloud Quality Gate Check
+        uses: sonarsource/sonarqube-quality-gate-action@v1.2.1
+        timeout-minutes: 5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
