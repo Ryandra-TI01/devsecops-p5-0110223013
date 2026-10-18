@@ -17,10 +17,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Set up Python 3.12
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5.4.0
         with:
           python-version: "3.12"
           cache: "pip"
@@ -28,14 +28,14 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install --only-binary :all: -r requirements.txt
 
       - name: Run automated test suite with coverage
         run: |
           pytest --cov=app --cov-report=term-missing --cov-report=xml:coverage.xml
 
       - name: Upload test coverage report artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
         with:
           name: coverage-artifact
           path: coverage.xml
@@ -48,12 +48,12 @@ jobs:
     needs: build
     steps:
       - name: Checkout repository (full git history for SonarCloud)
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
 
       - name: Set up Python 3.12
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5.4.0
         with:
           python-version: "3.12"
           cache: "pip"
@@ -61,10 +61,10 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install --only-binary :all: -r requirements.txt
 
       - name: Download test coverage report artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@cc203385981b70ca67e1cc392babf9cc229d5806 # v4.1.9
         with:
           name: coverage-artifact
 
@@ -73,7 +73,7 @@ jobs:
           bandit -r app -v
 
       - name: Run SonarCloud SAST scan
-        uses: SonarSource/sonarqube-scan-action@v8
+        uses: SonarSource/sonarqube-scan-action@7006c4492b2e0ee0f816d36501671557c97f5995 # v8.1.0
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
@@ -82,8 +82,7 @@ jobs:
             -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY || 'devsecops-p5-0110223013' }}
 
       - name: SonarCloud Quality Gate Check
-        uses: sonarsource/sonarqube-quality-gate-action@v1.2.1
+        uses: sonarsource/sonarqube-quality-gate-action@7a5fffe8e523c40e0c740b6bc2712ab503e52efa # v1.2.1
         timeout-minutes: 5
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-
